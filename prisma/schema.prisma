@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  FACULTY_ADMIN
+  SUPER_ADMIN
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum StepStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id              String             @id @default(cuid())
+  name            String
+  email           String             @unique
+  passwordHash    String
+  role            Role
+  departmentId    String?
+  department      Department?        @relation(fields: [departmentId], references: [id])
+
+  clearanceRequests ClearanceRequest[]  @relation("StudentRequests")
+  approvals         ClearanceStep[]     @relation("StepApprover")
+  uploadedDocuments ClearanceDocument[]
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+model Department {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  users       User[]
+  steps       ClearanceStep[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model ClearanceRequest {
+  id              String            @id @default(cuid())
+  studentId       String
+  student         User              @relation("StudentRequests", fields: [studentId], references: [id])
+  status          RequestStatus     @default(PENDING)
+  currentStep     Int               @default(0)
+  comments        String?
+
+  certificateId   String?           @unique
+  certificateIssuedAt DateTime?
+
+  steps           ClearanceStep[]
+  documents       ClearanceDocument[]
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([studentId])
+  @@index([status])
+}
+
+model ClearanceStep {
+  id            String          @id @default(cuid())
+  requestId     String
+  request       ClearanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  departmentId  String
+  department    Department      @relation(fields: [departmentId], references: [id])
+  status        StepStatus      @default(PENDING)
+  approverId    String?
+  approver      User?           @relation("StepApprover", fields: [approverId], references: [id])
+  comment       String?
+  timestamp     DateTime?
+  order         Int
+  documents     ClearanceDocument[]
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([requestId])
+  @@index([departmentId])
+  @@index([status])
+  @@unique([requestId, departmentId])
+}
+
+model ClearanceDocument {
+  id          String            @id @default(cuid())
+  requestId   String
+  request     ClearanceRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  stepId      String?
+  step        ClearanceStep?    @relation(fields: [stepId], references: [id], onDelete: SetNull)
+  uploadedById String
+  uploadedBy  User              @relation(fields: [uploadedById], references: [id])
+  fileUrl     String
+  fileKey     String?
+  fileName    String?
+  mimeType    String?
+  note        String?
+
+  createdAt   DateTime          @default(now())
+
+  @@index([requestId])
+  @@index([stepId])
+  @@index([uploadedById])
+}
