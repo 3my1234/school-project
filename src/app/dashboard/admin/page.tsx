@@ -73,6 +73,14 @@ export default function AdminDashboardPage() {
     loadSuperAdminContext();
   }, []);
 
+  useEffect(() => {
+    function onEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setModal(null);
+    }
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, []);
+
   async function loadSuperAdminContext() {
     const res = await fetch("/api/super-admin/users", { cache: "no-store" });
     if (!res.ok) {
@@ -290,6 +298,7 @@ export default function AdminDashboardPage() {
                         }
                       />
                       <Button
+                        type="button"
                         isLoading={resettingUserId === u.id}
                         onClick={() => resetUserPassword(u.id)}
                       >
@@ -326,6 +335,7 @@ export default function AdminDashboardPage() {
                   <td className="py-2">{row.department.name}</td>
                   <td className="py-2">
                     <Button
+                      type="button"
                       variant="secondary"
                       onClick={() => {
                         setModal(row);
@@ -344,8 +354,14 @@ export default function AdminDashboardPage() {
       )}
 
       {modal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <Card className="w-full max-w-xl">
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-8"
+          onClick={() => setModal(null)}
+        >
+          <Card
+            className="max-h-[85vh] w-full max-w-xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-lg font-semibold">Student Details</h3>
             <p className="mt-1 text-sm">{modal.request.student.name} ({modal.request.student.email})</p>
             <div className="mt-3">
@@ -390,9 +406,9 @@ export default function AdminDashboardPage() {
             </div>
             {actionError ? <p className="mt-2 text-sm text-red-700">{actionError}</p> : null}
             <div className="mt-4 flex gap-2">
-              <Button isLoading={actionLoading} onClick={() => act(modal, "APPROVE")}>Approve</Button>
-              <Button variant="danger" isLoading={actionLoading} onClick={() => act(modal, "REJECT")}>Reject</Button>
-              <Button variant="ghost" onClick={() => setModal(null)}>Close</Button>
+              <Button type="button" isLoading={actionLoading} onClick={() => act(modal, "APPROVE")}>Approve</Button>
+              <Button type="button" variant="danger" isLoading={actionLoading} onClick={() => act(modal, "REJECT")}>Reject</Button>
+              <Button type="button" variant="ghost" onClick={() => setModal(null)}>Close</Button>
             </div>
           </Card>
         </div>
