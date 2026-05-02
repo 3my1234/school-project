@@ -1,7 +1,13 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth";
 import { Card } from "@/components/ui/card";
+import { authOptions } from "@/lib/auth-options";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role;
+  const dashboardPath = role === "STUDENT" ? "/dashboard/student" : role ? "/dashboard/admin" : null;
+
   return (
     <section
       className="relative left-1/2 right-1/2 -mx-[50vw] min-h-screen w-screen bg-cover bg-center"
@@ -14,9 +20,15 @@ export default function HomePage() {
           <p className="mt-3 text-sm text-slate-700">
             Official departmental clearance portal for students and faculty administrators.
           </p>
-          <Link className="mt-5 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm text-white" href="/login">
-            Go to Login
-          </Link>
+          {dashboardPath ? (
+            <Link className="mt-5 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm text-white" href={dashboardPath}>
+              Go to Dashboard
+            </Link>
+          ) : (
+            <Link className="mt-5 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm text-white" href="/login">
+              Go to Login
+            </Link>
+          )}
         </Card>
       </div>
     </section>
