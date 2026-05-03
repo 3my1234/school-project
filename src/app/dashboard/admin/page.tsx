@@ -52,6 +52,8 @@ export default function AdminDashboardPage() {
   const [resettingUserId, setResettingUserId] = useState<string | null>(null);
   const [resetMessage, setResetMessage] = useState("");
   const [resetError, setResetError] = useState("");
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
@@ -164,6 +166,21 @@ export default function AdminDashboardPage() {
     setResetMessage(`Password reset for ${json.data.user.email}. New password: ${json.data.temporaryPassword}`);
   }
 
+  async function deleteUser(userId: string) {
+    if (!confirm("Delete this user permanently? This cannot be undone.")) return;
+    setDeleteError("");
+    setResetMessage("");
+    setDeletingUserId(userId);
+    const res = await fetch(`/api/super-admin/users/${userId}`, { method: "DELETE" });
+    const json = await res.json().catch(() => ({}));
+    setDeletingUserId(null);
+    if (!res.ok) {
+      setDeleteError(json.error || "Failed to delete user.");
+      return;
+    }
+    setManagedUsers((prev) => prev.filter((u) => u.id !== userId));
+  }
+
   async function act(step: PendingStep, action: "APPROVE" | "REJECT") {
     if (action === "REJECT" && !comment.trim()) {
       setActionError("Rejection comment is required.");
@@ -269,6 +286,7 @@ export default function AdminDashboardPage() {
           <h2 className="text-lg font-semibold">Super Admin: Reset User Password</h2>
           <p className="mt-1 text-sm text-slate-600">Reset any user password and share the new credential securely.</p>
           {resetError ? <p className="mt-2 text-sm text-red-700">{resetError}</p> : null}
+          {deleteError ? <p className="mt-2 text-sm text-red-700">{deleteError}</p> : null}
           {resetMessage ? <p className="mt-2 text-sm text-emerald-700">{resetMessage}</p> : null}
           <table className="mt-3 w-full text-left text-sm">
             <thead>
@@ -278,6 +296,7 @@ export default function AdminDashboardPage() {
                 <th className="py-2">Role</th>
                 <th className="py-2">Department</th>
                 <th className="py-2">Password Reset</th>
+                <th className="py-2">Delete</th>
               </tr>
             </thead>
             <tbody>
@@ -305,6 +324,16 @@ export default function AdminDashboardPage() {
                         Reset
                       </Button>
                     </div>
+                  </td>
+                  <td className="py-2">
+                    <Button
+                      type="button"
+                      variant="danger"
+                      isLoading={deletingUserId === u.id}
+                      onClick={() => deleteUser(u.id)}
+                    >
+                      Delete
+                    </Button>
                   </td>
                 </tr>
               ))}
